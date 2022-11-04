@@ -1,34 +1,15 @@
 import json
 import logging
+import random
 from typing import Any
 
 import jieba
 import numpy as np
 from keras import Sequential
-from keras.layers import Embedding, Bidirectional, CuDNNLSTM, LSTM, Dropout, Dense
+from keras.layers import Embedding, Bidirectional, CuDNNLSTM, LSTM, Dropout, Dense, Conv1D, MaxPooling1D, Flatten
 from keras.preprocessing import text
 from keras.saving.model_config import model_from_json
 from keras_preprocessing import sequence
-
-
-def create_model(cuda=False, output_dim=2, max_len=10, dict_len=10):
-    if cuda:
-        lstm = CuDNNLSTM
-    else:
-        lstm = LSTM
-    model = Sequential()
-    model.add(Embedding(trainable=True, input_dim=dict_len,
-                        output_dim=150, input_length=max_len))
-    model.add(Bidirectional(lstm(32, return_sequences=True), merge_mode='concat'))
-    model.add(Dropout(0.6))
-    model.add(Dense(96, activation='tanh'))
-    model.add(Dropout(0.6))
-    model.add(Bidirectional(lstm(24), merge_mode='concat'))
-    model.add(Dropout(0.6))
-    model.add(Dense(96, activation='relu'))
-    model.add(Dropout(0.6))
-    model.add(Dense(output_dim, activation='softmax'))
-    return model
 
 
 def words2dict(words):
@@ -65,6 +46,42 @@ def words2index(words_dict, words):
     return np.array(rt_list, dtype=object)
 
 
+def model_lstm(cuda=False, output_dim=2, max_len=10, dict_len=10):
+    if cuda:
+        lstm = CuDNNLSTM
+    else:
+        lstm = LSTM
+    model = Sequential()
+    model.add(Embedding(trainable=True, input_dim=dict_len,
+                        output_dim=150, input_length=max_len))
+    model.add(Bidirectional(lstm(32, return_sequences=True), merge_mode='concat'))
+    model.add(Dropout(0.6))
+    model.add(Dense(96, activation='tanh'))
+    model.add(Dropout(0.6))
+    model.add(Bidirectional(lstm(24), merge_mode='concat'))
+    model.add(Dropout(0.6))
+    model.add(Dense(96, activation='relu'))
+    model.add(Dropout(0.6))
+    model.add(Dense(output_dim, activation='softmax'))
+    return model
+
+
+def model_conv(output_dim=2, max_len=10, dict_len=10):
+    model = Sequential()
+    model.add(Embedding(trainable=True, input_dim=dict_len,
+                        output_dim=512, input_length=max_len))
+
+    model.add(Conv1D(kernel_size=5, filters=100))
+    model.add(MaxPooling1D(pool_size=1))
+    model.add(Conv1D(kernel_size=3, filters=100))
+    model.add(MaxPooling1D(pool_size=2))
+
+    model.add(Dense(1024, activation='relu'))
+
+    model.add(Flatten())
+    model.add(Dense(output_dim, activation='softmax'))
+
+
 class HKSA:
     def __init__(self):
         self.voca_len = None
@@ -72,9 +89,9 @@ class HKSA:
         self.keys = []
         self.word_dict = None
         self.train_data = None
-        self.model = create_model()
+        self.model = model_lstm()
 
-    def load_from_data(self, train_data):
+    def load_from_data(self, train_data, model=model_lstm):
         self.train_data = train_data
 
         sentence = ''
@@ -90,7 +107,7 @@ class HKSA:
         self.voca_len = voca_len
         self.word_dict = word_dict
         self.max_len = int(avg_len)
-        self.model = create_model(False, len(self.keys), self.max_len, self.voca_len)
+        self.model = model(False, len(self.keys), self.max_len, self.voca_len)
 
     def train(self, train_data=None,
               batch_size: Any = None,
@@ -120,6 +137,13 @@ class HKSA:
             y_train.append(temp_list)
 
         y_train = np.array(y_train)
+
+        indies = [i for i in range(len(x_train))]
+        random.seed(114514)
+        random.shuffle(indies)
+
+        x_train = x_train[indies]
+        y_train = y_train[indies]
 
         x_train = sequence.pad_sequences(x_train, maxlen=self.max_len)
         self.model.compile(loss='categorical_crossentropy',
@@ -161,7 +185,7 @@ class HKSA:
     def predict(self, datas):
         predict_datas = words2index(self.word_dict, datas)
         predict_datas = sequence.pad_sequences(predict_datas, maxlen=self.max_len)
-        print([self.keys[np.argmax(i)] for i in self.model.predict(predict_datas)])
+        return [self.keys[np.argmax(i)] for i in self.model.predict(predict_datas)]
 
 
 class Formatter:
