@@ -1,6 +1,6 @@
 import os.path
 
-from HKSA import HKSA, Formatter
+from HKSA import HKSA, Formatter, model_conv
 
 data_name = 'toutiao_cat_data.txt'
 formatter = Formatter.lists
@@ -18,14 +18,13 @@ if os.path.exists(os.path.join('model', data_name + '.json')):
     model.load(os.path.join('model', data_name + '.json'))
 else:
     print('Creating model...')
-    model.load_from_data(train_data)
+    model.create_from_data(train_data, model_conv)
 print('Dictionary size: ' + str(len(model.word_dict)))
 print('Dataset size: ' + str(len(train_data)))
 print('Keys size: ' + str(len(model.keys)))
 
-
 print('Training...')
-model.train(train_data, batch_size=5000, epochs=10)
+model.train(train_data, batch_size=5000, epochs=100)
 
 print('Saving...')
 model.save(os.path.join('model', data_name + '.json'))

@@ -18,11 +18,10 @@ if os.path.exists(os.path.join('model', data_name + '.json')):
     model.load(os.path.join('model', data_name + '.json'))
 else:
     print('Creating model...')
-    model.load_from_data(train_data)
+    model.create_from_data(train_data)
 print('Dictionary size: ' + str(len(model.word_dict)))
 print('Dataset size: ' + str(len(train_data)))
 print('Keys size: ' + str(len(model.keys)))
-print('Keys: ' + str(model.keys))
 
 print('Training...')
 model.train(train_data, batch_size=5000, epochs=4)

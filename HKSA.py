@@ -63,6 +63,9 @@ def model_lstm(cuda=False, output_dim=2, max_len=10, dict_len=10):
     model.add(Dense(96, activation='relu'))
     model.add(Dropout(0.6))
     model.add(Dense(output_dim, activation='softmax'))
+    model.compile(loss='categorical_crossentropy',
+                  optimizer='adam',
+                  metrics=['accuracy'])
     return model
 
 
@@ -80,6 +83,10 @@ def model_conv(output_dim=2, max_len=10, dict_len=10):
 
     model.add(Flatten())
     model.add(Dense(output_dim, activation='softmax'))
+    model.compile(loss='categorical_crossentropy',
+                  optimizer='adam',
+                  metrics=['accuracy'])
+    return model
 
 
 class HKSA:
@@ -91,7 +98,7 @@ class HKSA:
         self.train_data = None
         self.model = model_lstm()
 
-    def load_from_data(self, train_data, model=model_lstm):
+    def create_from_data(self, train_data, model=model_lstm):
         self.train_data = train_data
 
         sentence = ''
@@ -107,7 +114,10 @@ class HKSA:
         self.voca_len = voca_len
         self.word_dict = word_dict
         self.max_len = int(avg_len)
-        self.model = model(False, len(self.keys), self.max_len, self.voca_len)
+        if 'cuda' in model.__annotations__:
+            self.model = model(output_dim=len(self.keys), max_len=self.max_len, dict_len=self.voca_len, cuda=False)
+        else:
+            self.model = model(output_dim=len(self.keys), max_len=self.max_len, dict_len=self.voca_len)
 
     def train(self, train_data=None,
               batch_size: Any = None,
@@ -146,9 +156,7 @@ class HKSA:
         y_train = y_train[indies]
 
         x_train = sequence.pad_sequences(x_train, maxlen=self.max_len)
-        self.model.compile(loss='categorical_crossentropy',
-                           optimizer='adam',
-                           metrics=['accuracy'])
+
         self.model.fit(x_train, y_train,
                        batch_size=batch_size,
                        epochs=epochs,
@@ -181,11 +189,28 @@ class HKSA:
         self.max_len = model_json['max_len']
         self.keys = model_json['keys']
         self.model.load_weights(name + '.h5')
+        self.model.compile(loss='categorical_crossentropy',
+                           optimizer='adam',
+                           metrics=['accuracy'])
 
-    def predict(self, datas):
-        predict_datas = words2index(self.word_dict, datas)
+    def predict(self, data):
+        predict_datas = words2index(self.word_dict, data)
         predict_datas = sequence.pad_sequences(predict_datas, maxlen=self.max_len)
+
         return [self.keys[np.argmax(i)] for i in self.model.predict(predict_datas)]
+
+    def evaluate(self, data):
+        x = words2index(self.word_dict, data)
+        y = []
+        for i in data:
+            temp_list = [0 for _ in range(len(self.keys))]
+            temp_list[self.keys.index(data[i])] = 1
+            y.append(temp_list)
+
+        y = np.array(y)
+
+        x = sequence.pad_sequences(x, maxlen=self.max_len)
+        self.model.evaluate(x, y)
 
 
 class Formatter:

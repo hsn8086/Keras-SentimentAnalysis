@@ -2,13 +2,13 @@ import os.path
 
 from HKSA import HKSA
 
-data_name = 'weibo_senti_100k.csv.txt'
+model_name = 'weibo_senti_100k.csv.txt'
 model = HKSA()
-if os.path.exists(os.path.join('model', data_name + '.json')):
+if os.path.exists(os.path.join('model', model_name + '.json')):
     print('Loading model...')
-    model.load(os.path.join('model', data_name + '.json'))
+    model.load(os.path.join('model', model_name + '.json'))
 else:
-    raise FileNotFoundError(data_name + "'s model no found.")
+    raise FileNotFoundError(model_name + "'s model no found.")
 predict_list = ['hsn涨rks啦!  ', 'cpu跑的,有显卡那台家长在用', '@hsn涨rks啦! colab', '我看看', '？', '开作', 'Raid10  ',
                 '@Raid10 一眼msi', '不是微星还能啥', 'ED HIROSHI  ', '@ED HIROSHI 这啥', 'x', 'Btmy  ',
                 '@ED HIROSHI 这啥', '@Btmy ', '虚拟机？', 'woo', '这光威条子真能', 'Btmy  ', '虚拟机？', '@Btmy 实体',
