@@ -158,6 +158,11 @@ class HKSA:
         self.keys = model_json['keys']
         self.model.load_weights(name + '.h5')
 
+    def predict(self, datas):
+        predict_datas = words2index(self.word_dict, datas)
+        predict_datas = sequence.pad_sequences(predict_datas, maxlen=self.max_len)
+        print([self.keys[np.argmax(i)] for i in self.model.predict(predict_datas)])
+
 
 class Formatter:
     @staticmethod
