@@ -8,8 +8,8 @@ import numpy as np
 from keras import Sequential
 from keras.layers import Embedding, Bidirectional, CuDNNLSTM, LSTM, Dropout, Dense, Conv1D, MaxPooling1D, Flatten
 from keras.preprocessing import text
-from keras.saving.model_config import model_from_json
-from keras_preprocessing import sequence
+from keras.models import model_from_json
+from keras.utils import pad_sequences
 
 
 def words2dict(words):
@@ -155,7 +155,7 @@ class HKSA:
         x_train = x_train[indies]
         y_train = y_train[indies]
 
-        x_train = sequence.pad_sequences(x_train, maxlen=self.max_len)
+        x_train = pad_sequences(x_train, maxlen=self.max_len)
 
         self.model.fit(x_train, y_train,
                        batch_size=batch_size,
@@ -195,7 +195,7 @@ class HKSA:
 
     def predict(self, data):
         predict_datas = words2index(self.word_dict, data)
-        predict_datas = sequence.pad_sequences(predict_datas, maxlen=self.max_len)
+        predict_datas = pad_sequences(predict_datas, maxlen=self.max_len)
 
         return [self.keys[np.argmax(i)] for i in self.model.predict(predict_datas)]
 
@@ -209,7 +209,7 @@ class HKSA:
 
         y = np.array(y)
 
-        x = sequence.pad_sequences(x, maxlen=self.max_len)
+        x = pad_sequences(x, maxlen=self.max_len)
         self.model.evaluate(x, y)
 
 
