@@ -89,6 +89,12 @@ def model_conv(output_dim=2, max_len=10, dict_len=10):
     return model
 
 
+def d_data2one(data1: str, data2: str):
+    min_ = min(len(data1), len(data2))
+    rg = random.randint(0, min_)
+    return data1[:rg] + data2[rg:]
+
+
 class HKSA:
     def __init__(self):
         self.voca_len = None
@@ -136,9 +142,19 @@ class HKSA:
               validation_freq: int = 1,
               max_queue_size: int = 10,
               workers: int = 1,
-              use_multiprocessing: bool = False):
+              use_multiprocessing: bool = False,
+              rg: int = None):
         if train_data is None:
             train_data = self.train_data
+        if rg:
+            for _ in range(rg):
+                key1 = random.choice(list(train_data))
+                v = train_data[key1]
+                key2 = random.choice(list(train_data))
+                while v != train_data[key2]:
+                    key2 = random.choice(list(train_data))
+                train_data[d_data2one(key1, key2)] = v
+            print(f'rged data size: {len(train_data)}')
         x_train = words2index(self.word_dict, train_data)
         y_train = []
         for i in train_data:

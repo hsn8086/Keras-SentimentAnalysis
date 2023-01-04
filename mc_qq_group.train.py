@@ -24,7 +24,7 @@ print('Dataset size: ' + str(len(train_data)))
 print('Keys size: ' + str(len(model.keys)))
 
 print('Training...')
-model.train(train_data, batch_size=10, epochs=16)
+model.train(train_data, batch_size=10, epochs=16,rg=1000)
 
 print('Saving...')
 model.save(os.path.join('model', data_name + '.json'))
